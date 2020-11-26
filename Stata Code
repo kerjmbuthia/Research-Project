@@ -1,0 +1,58 @@
+** Loading the data
+ insheet using "C:\Users\kerjmbuthia\Desktop\School 3.2\Research Methods\Project\DATA.csv"
+ 
+ ** Declaring the data is Time Series
+tsset year, yearly
+
+ ** Obtaining the summary of the statistics
+ tabstat gdp inflation manufacturing gni, statistics( mean max min sd var cv skewness kurtosis ) columns(variables)
+ 
+** Establishing the trend of our variables
+woway(tsline    manufacturing)
+twoway(tsline  gdp)
+twoway(tsline  inflation)
+twoway(tsline   gni)
+
+* Testing for stationarity in all variables
+dfgls  gdp
+dfgls  inflation
+dfgls  gni
+dfgls  manufacturing
+
+** Differencing the dependent variable
+gen dmanumufacturing = manufacturing- l.manufacturing
+dfgls  dmanufacturing
+
+** Testing for serial correlation in residuals
+regress  dmanufacturing gdp inflation gni
+estat dwatson
+estat durbinalt
+
+The p-value, 0.6424, is greater than the standard critical value of 0.05, therefore we fail to reject the null hypothesis. 
+Therefore, there is no serial correlation present in the residuals. 
+
+* BoxJenkins methodology
+
+** Identification
+ac  dmanufacturing, lags(12)
+There are no significant lags present. Thus no model can be identified from it. 
+pac  dmanufacturing, lags(12)
+
+It is an AR model because it has a significant spikes through lag 10,  AR[10].
+
+** Estimation and diagnostic checking
+arima  dmanufacturing, arima(10,0,0)
+predict resdmanufacturing, residuals
+lmalb resdmanufacturing, lags(12)
+
+The p-value, 0.9946, is greater than the 5% level of significance  Therefore, it is significant and does not lie within the confidence interval bounds. From this we fail to reject the null hypothesis. Hence, we conclude that there is no serial correlation, the residuals are white noise and they are stationary as desired.
+
+** Model complexity evaluation
+arima  dmanufacturing, arima(10,0,0)
+estat ic
+
+** Forecasting
+arima  dmanufacturing, arima(10,0,0)
+predict gendmanufacturing, y
+twoway (line dmanufacturing year) (line gendmanufacturing year)
+              
